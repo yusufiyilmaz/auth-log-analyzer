@@ -11,6 +11,26 @@ Yalnızca Python standart kütüphanesini kullanır (GeoIP isteğe bağlıdır).
 - Şüpheli `sudo` komutları (`/etc/shadow`, shell açma, `useradd` vb.) ve reddedilen `sudo`
 - `su` denemeleri, yeni kullanıcılar ve hassas gruplara (`sudo`, `docker` vb.) eklemeler
 
+## MITRE ATT&CK eşlemesi
+
+Bulgular, rapordaki **MITRE ATT&CK** bölümünde tekniklere eşlenir (terminal, JSON ve HTML çıktısında).
+Eşleme kuralları [mitre.py](mitre.py) dosyasındadır.
+
+| Bulgu | Teknik |
+|---|---|
+| Brute force | T1110.001 Password Guessing |
+| Başarısız denemelerden sonra başarılı giriş | T1078.003 Local Accounts, T1021.004 SSH |
+| `sudo` ile `/etc/shadow` okuma | T1003.008 /etc/passwd and /etc/shadow |
+| `sudo` ile shell, Python veya Perl çalıştırma | T1059.004, T1059.006, T1059 |
+| Reddedilen `sudo` | T1548.003 Sudo and Sudo Caching |
+| Yeni kullanıcı | T1136.001 Local Account |
+| Hassas gruba ekleme, parola değişikliği | T1098 Account Manipulation |
+| Komut geçmişini silme, firewall kurallarını temizleme | T1070.003, T1562.004 |
+| `wget`/`curl` ile dosya indirme, `nc` | T1105, T1095 |
+
+Bir tekniğin listelenmesi saldırının başarılı olduğunu değil, logda o tekniğe uyan bir iz bulunduğunu gösterir.
+Reddedilen `sudo` komutları çalışmadığı için yalnızca deneme (T1548.003) olarak sayılır.
+
 ## Kullanım
 
 ```bash
@@ -39,10 +59,10 @@ IP adresleri dokümantasyon için ayrılmış aralıklardan (RFC 5737) seçilmi�
 python -m unittest -v
 ```
 
-Testler; deneme sayımını (geçersiz kullanıcı, aynı bağlantıda birden fazla parola), brute force eşiğini ve olası ele geçirme tespitini kontrol eder.
+Testler; deneme sayımını (geçersiz kullanıcı, aynı bağlantıda birden fazla parola), brute force eşiğini, olası ele geçirme tespitini ve MITRE ATT&CK eşlemesini kontrol eder.
 
 ## Yapılacaklar
 
-- [ ] Bulguların MITRE ATT&CK tekniklerine eşlenmesi
+- [x] Bulguların MITRE ATT&CK tekniklerine eşlenmesi
 - [ ] Sigma kuralları
 - [x] Testler

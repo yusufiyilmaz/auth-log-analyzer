@@ -17,6 +17,8 @@ from collections import Counter, defaultdict, deque
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
+from mitre import map_report
+
 # Satır başlığı: klasik syslog ve ISO8601 (yeni rsyslog) formatı
 SYSLOG_HDR = re.compile(
     r"^(?P<ts>[A-Z][a-z]{2}\s+\d{1,2}\s\d{2}:\d{2}:\d{2})\s+(?P<host>\S+)\s+"
@@ -183,7 +185,7 @@ def analyze(events, threshold, window):
     sudo = [e for e in events if e.kind == "sudo"]
     hours = Counter(e.ts.hour for e in fails)
 
-    return {
+    report = {
         "failed_attempts": len(fails),
         "period": {
             "start": events[0].ts.isoformat() if events else None,
@@ -213,6 +215,8 @@ def analyze(events, threshold, window):
         ],
         "failed_by_hour": {h: hours.get(h, 0) for h in range(24)},
     }
+    report["mitre"] = map_report(report)
+    return report
 
 
 # ----------------------------- Çıktı -----------------------------
@@ -284,6 +288,13 @@ def print_report(r, top):
             line = f"  {x['ts']}  {x['kind']:<10} {x['user']}{detail}"
             print(col(line, RED) if x["sensitive"] else line)
 
+    section(f"MITRE ATT&CK ({len(r['mitre'])} teknik)")
+    if not r["mitre"]:
+        print(col("  Eşleşen teknik yok", GRN))
+    for t in r["mitre"]:
+        print(col(f"  {t['id']:<10}", YEL) + f" {t['name']}  " + col(f"[{t['tactic']}] ×{t['count']}", DIM))
+        print(col(f"      örn: {t['evidence'][0]}", DIM))
+
     section("Saate göre başarısız denemeler")
     mx = max(r["failed_by_hour"].values()) or 1
     for h, n in r["failed_by_hour"].items():
@@ -322,7 +333,7 @@ main{max-width:960px;margin:0 auto}h1{font-size:22px;margin:0 0 4px}h2{font-size
 .alert{border:1px solid var(--red);border-left-width:4px;border-radius:6px;padding:10px 12px;margin:8px 0;color:var(--red)}
 table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);overflow-wrap:anywhere}
 th{color:var(--mut);font-weight:600}.wrap{overflow-x:auto}.bar{height:10px;background:var(--amb);border-radius:2px}
-code{font-family:ui-monospace,Consolas,monospace}.red{color:var(--red)}.amb{color:var(--amb)}
+code{font-family:ui-monospace,Consolas,monospace}a{color:var(--amb)}.red{color:var(--red)}.amb{color:var(--amb)}
 """
 
 
@@ -390,6 +401,12 @@ def write_html(r, path):
             f"<tr><td>{e(x['ts'])}</td><td>{e(x['kind'])}</td><td>{e(str(x['user']))}</td>"
             f"<td class='{'red' if x['sensitive'] else ''}'>{e(x.get('group', ''))}</td></tr>"
             for x in r["account_changes"]]))
+
+    p.append("<h2>MITRE ATT&amp;CK</h2>")
+    p.append(table(["Taktik", "Teknik", "Bulgu", "Örnek"], [
+        f"<tr><td>{e(t['tactic'])}</td><td><a href='{e(t['url'])}'><code>{e(t['id'])}</code></a> {e(t['name'])}</td>"
+        f"<td>{t['count']}</td><td>{e(t['evidence'][0])}</td></tr>"
+        for t in r["mitre"]]))
 
     p.append("<h2>Saate göre başarısız denemeler</h2>")
     mx = max(r["failed_by_hour"].values()) or 1
