@@ -1,4 +1,4 @@
-"""Test için sahte auth.log üretir (samples/auth.log)."""
+"""Test için sahte auth.log üretir (samples/generated.log)."""
 import random
 import sys
 
@@ -35,7 +35,7 @@ add("Oct 14 10:12:44", "su[4500]", "pam_unix(su:session): session opened for use
 add("Oct 14 11:00:01", "su[4600]", "pam_unix(su:auth): authentication failure; logname=intern uid=1003 euid=0 tty=pts/2 ruser=intern rhost=  user=root")
 
 L.sort()
-out = sys.argv[1] if len(sys.argv) > 1 else "samples/auth.log"
+out = sys.argv[1] if len(sys.argv) > 1 else "samples/generated.log"
 with open(out, "w") as f:
     f.write("\n".join(L) + "\n")
 print(f"{len(L)} satir yazildi -> {out}")

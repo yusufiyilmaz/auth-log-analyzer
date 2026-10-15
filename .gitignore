@@ -8,3 +8,5 @@ venv/
 *.log
 !samples/*.log
 reports/
+raporlar/
+*.mmdb
