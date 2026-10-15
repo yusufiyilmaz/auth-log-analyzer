@@ -107,18 +107,22 @@ def parse_lines(lines, year):
 
 def dedupe_failures(events, gap=timedelta(seconds=5)):
     """OpenSSH geçersiz kullanıcıda hem 'Invalid user' hem 'Failed password' yazar.
-    Aynı IP+kaynak portundan kısa aralıkla gelen çiftleri tek deneme sayar."""
-    last, out = {}, []
+    Aynı IP+kaynak portundan kısa aralıkla gelen 'Failed' satırı varsa 'Invalid user'
+    satırı sayılmaz. Aynı bağlantıdaki ardışık 'Failed' satırları ayrı denemelerdir."""
+    failed_at = defaultdict(list)
+    for e in events:
+        port = (e.extra or {}).get("port")
+        if e.kind == "ssh_failed" and e.ip and port:
+            failed_at[(e.ip, port)].append(e.ts)
+
+    out = []
     for e in events:
         if e.kind not in FAIL_KINDS or not e.ip:
             continue
         port = (e.extra or {}).get("port")
-        if port:
-            key = (e.ip, port)
-            if key in last and e.ts - last[key] <= gap:
-                last[key] = e.ts
-                continue
-            last[key] = e.ts
+        if e.kind == "ssh_invalid" and port and any(
+                abs(t - e.ts) <= gap for t in failed_at.get((e.ip, port), ())):
+            continue
         out.append(e)
     return out
 
