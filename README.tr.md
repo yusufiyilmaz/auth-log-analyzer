@@ -8,8 +8,7 @@
 
 [English](README.md) | **Türkçe**
 
-Linux `auth.log` dosyalarını analiz edip SSH saldırılarını, şüpheli `sudo` kullanımını ve hesap değişikliklerini raporlayan bir komut satırı aracı.
-Bulgular **MITRE ATT&CK** tekniklerine eşlenir; aynı tespitler bir SIEM'de kullanılmak üzere **Sigma kuralları** olarak da sunulur.
+**Linux auth loglarında SSH brute force, hesap ele geçirme ve yetki kötüye kullanımını tespit eder; bulguları MITRE ATT&CK'e eşler.**
 
 ![Örnek logdan üretilen HTML rapor](docs/report.png)
 
