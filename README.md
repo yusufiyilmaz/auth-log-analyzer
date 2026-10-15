@@ -8,8 +8,7 @@
 
 **English** | [Türkçe](README.tr.md)
 
-A command-line tool that analyzes Linux `auth.log` files and reports SSH attacks, suspicious `sudo` use and account changes.
-Findings are mapped to **MITRE ATT&CK** techniques, and the same detections ship as **Sigma rules** for use in a SIEM.
+**Detect SSH brute force, account takeover and privilege abuse in Linux auth logs, mapped to MITRE ATT&CK.**
 
 ![HTML report generated from the sample log](docs/report.png)
 
