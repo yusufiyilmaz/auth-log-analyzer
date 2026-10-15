@@ -202,7 +202,8 @@ def analyze(events, threshold, window):
         "possible_compromise": compromised,
         "sudo_suspicious": [
             {"ts": e.ts.isoformat(), "user": e.user, "as": e.extra.get("target"), "cmd": e.extra.get("cmd")}
-            for e in sudo if e.extra and SUSPICIOUS_CMD.search(e.extra.get("cmd", ""))
+            # reddedilen komutlar çalışmadı, yalnızca sudo_denied altında listelenir
+            for e in sudo if e.extra and not e.extra.get("fail") and SUSPICIOUS_CMD.search(e.extra.get("cmd", ""))
         ],
         "sudo_denied": [
             {"ts": e.ts.isoformat(), "user": e.user, "reason": e.extra.get("fail"), "cmd": e.extra.get("cmd")}
@@ -332,7 +333,7 @@ main{max-width:960px;margin:0 auto}h1{font-size:22px;margin:0 0 4px}h2{font-size
 .card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px}.card b{display:block;font-size:22px}
 .alert{border:1px solid var(--red);border-left-width:4px;border-radius:6px;padding:10px 12px;margin:8px 0;color:var(--red)}
 table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);overflow-wrap:anywhere}
-th{color:var(--mut);font-weight:600}.wrap{overflow-x:auto}.bar{height:10px;background:var(--amb);border-radius:2px}
+th{color:var(--mut);font-weight:600;white-space:nowrap}.wrap{overflow-x:auto}.bar{height:10px;background:var(--amb);border-radius:2px}
 code{font-family:ui-monospace,Consolas,monospace}a{color:var(--amb)}.red{color:var(--red)}.amb{color:var(--amb)}
 """
 

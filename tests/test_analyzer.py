@@ -57,6 +57,13 @@ Oct 15 08:01:12 web01 sshd[1201]: Accepted publickey for yusuf from 192.0.2.10 p
         self.assertEqual(r["possible_compromise"], [])
         self.assertEqual(r["bruteforce"], [])
 
+    def test_denied_sudo_not_listed_as_suspicious(self):
+        r = run("""
+Oct 15 13:46:30 web01 sudo:   deploy : user NOT in sudoers ; TTY=pts/1 ; PWD=/home/deploy ; USER=root ; COMMAND=/bin/bash
+""")
+        self.assertEqual(r["sudo_suspicious"], [])
+        self.assertEqual(len(r["sudo_denied"]), 1)
+
     def test_bruteforce_threshold_inside_window(self):
         lines = "\n".join(
             f"Oct 15 09:12:{s:02d} web01 sshd[{1300 + s}]: Failed password for root from 203.0.113.45 port {40100 + s} ssh2"
