@@ -33,8 +33,16 @@ IP adresleri dokümantasyon için ayrılmış aralıklardan (RFC 5737) seçilmi�
 - `samples/auth.log`: elle yazılmış kısa senaryo
 - `samples/generated.log`: `python make_sample.py samples/generated.log` ile üretilir
 
+## Testler
+
+```bash
+python -m unittest -v
+```
+
+Testler; deneme sayımını (geçersiz kullanıcı, aynı bağlantıda birden fazla parola), brute force eşiğini ve olası ele geçirme tespitini kontrol eder.
+
 ## Yapılacaklar
 
 - [ ] Bulguların MITRE ATT&CK tekniklerine eşlenmesi
 - [ ] Sigma kuralları
-- [ ] Testler
+- [x] Testler
