@@ -1,0 +1,24 @@
+title: Shadow File Accessed Via Sudo
+id: f255736f-2efd-4e8a-8053-f5e51aa1cad7
+status: experimental
+description: Detects commands run with sudo that reference /etc/shadow or /etc/gshadow, which hold password hashes and are a target for offline password cracking.
+references:
+    - https://attack.mitre.org/techniques/T1003/008/
+author: Yusuf Yılmaz
+date: 2026-10-15
+tags:
+    - attack.credential-access
+    - attack.t1003.008
+logsource:
+    product: linux
+    service: auth
+detection:
+    keywords_sudo:
+        - 'COMMAND='
+    keywords_shadow:
+        - '/etc/shadow'
+        - '/etc/gshadow'
+    condition: keywords_sudo and keywords_shadow
+falsepositives:
+    - Administrators auditing or repairing account files
+level: high

@@ -1,0 +1,22 @@
+title: New Local User Created
+id: d3dbc908-a4c9-4fca-8556-c9e33b63a694
+status: experimental
+description: Detects the creation of a new local user account, which attackers use to keep access to a compromised host.
+references:
+    - https://attack.mitre.org/techniques/T1136/001/
+author: Yusuf Yılmaz
+date: 2026-10-15
+tags:
+    - attack.persistence
+    - attack.t1136.001
+logsource:
+    product: linux
+    service: auth
+detection:
+    keywords:
+        - 'new user: name='
+    condition: keywords
+falsepositives:
+    - Legitimate user provisioning by administrators
+    - Package installations that create service accounts
+level: low

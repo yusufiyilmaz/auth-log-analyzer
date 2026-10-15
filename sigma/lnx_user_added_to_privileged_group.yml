@@ -1,0 +1,28 @@
+title: User Added To Privileged Group
+id: f6c772e0-3956-40c4-a0e8-2641bdf6af9b
+status: experimental
+description: Detects a user being added to a group that grants root-level access (sudo, wheel, admin, docker, lxd), a common way to keep elevated access.
+references:
+    - https://attack.mitre.org/techniques/T1098/
+author: Yusuf Yılmaz
+date: 2026-10-15
+tags:
+    - attack.persistence
+    - attack.privilege-escalation
+    - attack.t1098
+logsource:
+    product: linux
+    service: auth
+detection:
+    keywords_add:
+        - "add '"
+    keywords_group:
+        - "group 'sudo'"
+        - "group 'wheel'"
+        - "group 'admin'"
+        - "group 'docker'"
+        - "group 'lxd'"
+    condition: keywords_add and keywords_group
+falsepositives:
+    - Administrators granting rights to new team members
+level: medium

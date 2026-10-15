@@ -31,6 +31,30 @@ Eşleme kuralları [mitre.py](mitre.py) dosyasındadır.
 Bir tekniğin listelenmesi saldırının başarılı olduğunu değil, logda o tekniğe uyan bir iz bulunduğunu gösterir.
 Reddedilen `sudo` komutları çalışmadığı için yalnızca deneme (T1548.003) olarak sayılır.
 
+## Sigma kuralları
+
+[sigma/](sigma/) klasöründeki kurallar, aynı tespitleri bir SIEM'de (Splunk, Elastic, Wazuh vb.) çalıştırmak içindir.
+Hepsi `sigma check` ile doğrulandı ve örnek loglarda beklenen satırları yakalıyor.
+
+| Kural | Teknik | Seviye |
+|---|---|---|
+| [lnx_sshd_invalid_user](sigma/lnx_sshd_invalid_user.yml) | T1110.001 | low |
+| [lnx_sudo_not_in_sudoers](sigma/lnx_sudo_not_in_sudoers.yml) | T1548.003 | medium |
+| [lnx_sudo_shadow_access](sigma/lnx_sudo_shadow_access.yml) | T1003.008 | high |
+| [lnx_useradd_new_user](sigma/lnx_useradd_new_user.yml) | T1136.001 | low |
+| [lnx_user_added_to_privileged_group](sigma/lnx_user_added_to_privileged_group.yml) | T1098 | medium |
+
+Kuralları SIEM sorgusuna çevirmek için [sigma-cli](https://github.com/SigmaHQ/sigma-cli) kullanılabilir:
+
+```bash
+pip install sigma-cli
+sigma check sigma/
+```
+
+Notlar:
+- Bu kurallar tek tek log satırlarına bakar. Brute force tespiti (aynı IP'den belirli sürede belirli sayıda deneme) IP alanının ayrıştırılmasını gerektirdiği için analizörde yapılır.
+- SIEM'ler büyük/küçük harf duyarsız aradığından `Invalid user` kuralı, aynı denemenin `Failed password for invalid user` satırıyla da eşleşebilir. Deneme sayımı analizörde tekilleştirilir.
+
 ## Kullanım
 
 ```bash
@@ -64,5 +88,5 @@ Testler; deneme sayımını (geçersiz kullanıcı, aynı bağlantıda birden fa
 ## Yapılacaklar
 
 - [x] Bulguların MITRE ATT&CK tekniklerine eşlenmesi
-- [ ] Sigma kuralları
+- [x] Sigma kuralları
 - [x] Testler

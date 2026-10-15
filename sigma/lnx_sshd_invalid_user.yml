@@ -1,0 +1,22 @@
+title: SSH Login Attempt With Non-Existent User
+id: c9111b5d-9404-43bf-addd-9227974ce989
+status: experimental
+description: Detects SSH login attempts for user names that do not exist on the host, a common sign of automated password guessing or user enumeration.
+references:
+    - https://attack.mitre.org/techniques/T1110/001/
+author: Yusuf Yılmaz
+date: 2026-10-15
+tags:
+    - attack.credential-access
+    - attack.t1110.001
+logsource:
+    product: linux
+    service: auth
+detection:
+    keywords:
+        - 'Invalid user'
+    condition: keywords
+falsepositives:
+    - Users mistyping their user name
+    - Misconfigured automation using an old account name
+level: low

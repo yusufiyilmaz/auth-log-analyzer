@@ -1,0 +1,21 @@
+title: Sudo Attempt By User Not In Sudoers
+id: 0034a66b-d568-4a8f-957a-c4609d06c5bb
+status: experimental
+description: Detects a user without sudo rights trying to run a command as another user, which can indicate a privilege escalation attempt from a compromised account.
+references:
+    - https://attack.mitre.org/techniques/T1548/003/
+author: Yusuf Yılmaz
+date: 2026-10-15
+tags:
+    - attack.privilege-escalation
+    - attack.t1548.003
+logsource:
+    product: linux
+    service: auth
+detection:
+    keywords:
+        - 'user NOT in sudoers'
+    condition: keywords
+falsepositives:
+    - New users who have not been granted sudo rights yet
+level: medium
