@@ -1,0 +1,31 @@
+Oct 15 08:01:12 web01 sshd[1201]: Accepted publickey for yusuf from 192.0.2.10 port 51122 ssh2: ED25519 SHA256:exampleKeyFingerprint
+Oct 15 08:01:12 web01 sshd[1201]: pam_unix(sshd:session): session opened for user yusuf(uid=1000) by (uid=0)
+Oct 15 08:05:40 web01 sudo:    yusuf : TTY=pts/0 ; PWD=/home/yusuf ; USER=root ; COMMAND=/usr/bin/apt update
+Oct 15 09:12:01 web01 sshd[1302]: Failed password for root from 203.0.113.45 port 40112 ssh2
+Oct 15 09:12:03 web01 sshd[1304]: Failed password for root from 203.0.113.45 port 40114 ssh2
+Oct 15 09:12:05 web01 sshd[1306]: Failed password for root from 203.0.113.45 port 40116 ssh2
+Oct 15 09:12:07 web01 sshd[1308]: Failed password for root from 203.0.113.45 port 40118 ssh2
+Oct 15 09:12:09 web01 sshd[1310]: Failed password for root from 203.0.113.45 port 40120 ssh2
+Oct 15 09:12:11 web01 sshd[1312]: Failed password for root from 203.0.113.45 port 40122 ssh2
+Oct 15 09:12:13 web01 sshd[1314]: Failed password for root from 203.0.113.45 port 40124 ssh2
+Oct 15 09:12:15 web01 sshd[1316]: Failed password for root from 203.0.113.45 port 40126 ssh2
+Oct 15 10:30:20 web01 sshd[1401]: Invalid user admin from 198.51.100.23 port 55001
+Oct 15 10:30:20 web01 sshd[1401]: Failed password for invalid user admin from 198.51.100.23 port 55001 ssh2
+Oct 15 10:30:24 web01 sshd[1403]: Invalid user oracle from 198.51.100.23 port 55003
+Oct 15 10:30:24 web01 sshd[1403]: Failed password for invalid user oracle from 198.51.100.23 port 55003 ssh2
+Oct 15 10:30:28 web01 sshd[1405]: Invalid user test from 198.51.100.23 port 55005
+Oct 15 10:30:28 web01 sshd[1405]: Failed password for invalid user test from 198.51.100.23 port 55005 ssh2
+Oct 15 10:30:32 web01 sshd[1407]: Invalid user postgres from 198.51.100.23 port 55007
+Oct 15 10:30:32 web01 sshd[1407]: Failed password for invalid user postgres from 198.51.100.23 port 55007 ssh2
+Oct 15 10:30:36 web01 sshd[1409]: Invalid user ubuntu from 198.51.100.23 port 55009
+Oct 15 10:30:36 web01 sshd[1409]: Failed password for invalid user ubuntu from 198.51.100.23 port 55009 ssh2
+Oct 15 13:44:02 web01 sshd[1501]: Failed password for deploy from 203.0.113.77 port 60210 ssh2
+Oct 15 13:44:05 web01 sshd[1503]: Failed password for deploy from 203.0.113.77 port 60212 ssh2
+Oct 15 13:44:08 web01 sshd[1505]: Failed password for deploy from 203.0.113.77 port 60214 ssh2
+Oct 15 13:44:11 web01 sshd[1507]: Failed password for deploy from 203.0.113.77 port 60216 ssh2
+Oct 15 13:44:14 web01 sshd[1509]: Accepted password for deploy from 203.0.113.77 port 60218 ssh2
+Oct 15 13:44:14 web01 sshd[1509]: pam_unix(sshd:session): session opened for user deploy(uid=1001) by (uid=0)
+Oct 15 13:46:30 web01 sudo:   deploy : user NOT in sudoers ; TTY=pts/1 ; PWD=/home/deploy ; USER=root ; COMMAND=/bin/bash
+Oct 15 13:47:02 web01 sudo: pam_unix(sudo:auth): authentication failure; logname=deploy uid=1001 euid=0 tty=/dev/pts/1 ruser=deploy rhost=  user=deploy
+Oct 15 13:50:11 web01 sshd[1509]: pam_unix(sshd:session): session closed for user deploy
+Oct 15 17:20:45 web01 sshd[1201]: pam_unix(sshd:session): session closed for user yusuf
