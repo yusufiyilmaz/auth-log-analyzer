@@ -8,7 +8,9 @@ Kullanım:
 """
 import argparse
 import gzip
+import html
 import json
+import os
 import re
 import sys
 from collections import Counter, defaultdict, deque
@@ -244,7 +246,8 @@ def print_report(r, top):
         print(col("  Yok", GRN))
     for a in r["bruteforce"][:top]:
         users = ", ".join(a["users_tried"][:6]) + (" …" if len(a["users_tried"]) > 6 else "")
-        print(col(f"  {a['ip']:<40}", YEL) +
+        cc = f"[{r['geo'][a['ip']]}] " if r.get("geo", {}).get(a["ip"]) else ""
+        print(col(f"  {cc}{a['ip']:<40}", YEL) +
               f" toplam {a['total_failures']:>5} | pencerede tepe {a['peak_in_window']:>4} | {a['first_seen']} → {a['last_seen']}")
         print(col(f"      denenen: {users}", DIM))
 
@@ -285,6 +288,116 @@ def print_report(r, top):
     print()
 
 
+def geo_lookup(db_path, ips):
+    """Yerel MaxMind GeoLite2-Country .mmdb ile ülke kodu. IP'ler dışarı gönderilmez."""
+    try:
+        import geoip2.database
+    except ImportError:
+        print("uyarı: geoip2 yüklü değil (pip install geoip2), GeoIP atlandı", file=sys.stderr)
+        return {}
+    out = {}
+    try:
+        with geoip2.database.Reader(db_path) as rd:
+            for ip in ips:
+                try:
+                    out[ip] = rd.country(ip).country.iso_code or "?"
+                except Exception:
+                    out[ip] = "-"  # özel/bulunamayan adres
+    except OSError as e:
+        print(f"uyarı: {db_path}: {e}", file=sys.stderr)
+    return out
+
+
+HTML_CSS = """
+:root{--bg:#fff;--fg:#1a1a1a;--mut:#666;--card:#f6f6f7;--line:#ddd;--red:#c0392b;--amb:#b9770e;--grn:#1e8449}
+@media (prefers-color-scheme:dark){:root{--bg:#141517;--fg:#e8e8e8;--mut:#999;--card:#1e2023;--line:#33363a;--red:#ff6b5b;--amb:#e6a23c;--grn:#52c07a}}
+*{box-sizing:border-box}body{margin:0;padding:24px 16px;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,sans-serif}
+main{max-width:960px;margin:0 auto}h1{font-size:22px;margin:0 0 4px}h2{font-size:16px;margin:28px 0 8px}
+.sub{color:var(--mut)}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:16px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px}.card b{display:block;font-size:22px}
+.alert{border:1px solid var(--red);border-left-width:4px;border-radius:6px;padding:10px 12px;margin:8px 0;color:var(--red)}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);overflow-wrap:anywhere}
+th{color:var(--mut);font-weight:600}.wrap{overflow-x:auto}.bar{height:10px;background:var(--amb);border-radius:2px}
+code{font-family:ui-monospace,Consolas,monospace}.red{color:var(--red)}.amb{color:var(--amb)}
+"""
+
+
+def write_html(r, path):
+    e = html.escape
+    geo = r.get("geo", {})
+
+    def cc(ip):
+        return f"<td>{e(geo.get(ip, ''))}</td>" if geo else ""
+
+    def table(head, rows):
+        if not rows:
+            return '<p class="sub">Yok</p>'
+        th = "".join(f"<th>{e(h)}</th>" for h in head)
+        return f'<div class="wrap"><table><tr>{th}</tr>{"".join(rows)}</table></div>'
+
+    c = r["counts"]
+    geo_h = ["Ülke"] if geo else []
+    p = [f"<!doctype html><html lang='tr'><head><meta charset='utf-8'>"
+         f"<meta name='viewport' content='width=device-width,initial-scale=1'>"
+         f"<title>auth.log Raporu</title><style>{HTML_CSS}</style></head><body><main>",
+         f"<h1>auth.log Raporu</h1><div class='sub'>{e(str(r['period']['start']))} → {e(str(r['period']['end']))}</div>",
+         "<div class='cards'>"
+         f"<div class='card'><b>{r['failed_attempts']}</b>başarısız SSH denemesi</div>"
+         f"<div class='card'><b>{c.get('ssh_accepted', 0)}</b>başarılı SSH girişi</div>"
+         f"<div class='card'><b class='{'red' if r['bruteforce'] else ''}'>{len(r['bruteforce'])}</b>brute-force IP</div>"
+         f"<div class='card'><b>{c.get('sudo', 0)}</b>sudo komutu</div></div>"]
+
+    for x in r["possible_compromise"]:
+        tag = " · brute-force IP" if x["bruteforce_ip"] else ""
+        p.append(f"<div class='alert'><b>Olası ele geçirme:</b> {e(x['ts'])} — <code>{e(str(x['user']))}@{e(str(x['ip']))}</code> "
+                 f"({e(str(x['method']))}), öncesinde {x['prior_failures']} hata{tag}</div>")
+
+    p.append("<h2>Brute-force tespitleri</h2>")
+    p.append(table(["IP", *geo_h, "Toplam", "Pencerede tepe", "İlk", "Son", "Denenen kullanıcılar"], [
+        f"<tr><td><code>{e(a['ip'])}</code></td>{cc(a['ip'])}<td>{a['total_failures']}</td><td>{a['peak_in_window']}</td>"
+        f"<td>{e(a['first_seen'])}</td><td>{e(a['last_seen'])}</td><td>{e(', '.join(a['users_tried']))}</td></tr>"
+        for a in r["bruteforce"]]))
+
+    p.append("<h2>En çok başarısız deneme yapan IP'ler</h2>")
+    p.append(table(["IP", *geo_h, "Deneme"], [
+        f"<tr><td><code>{e(ip)}</code></td>{cc(ip)}<td>{n}</td></tr>" for ip, n in r["top_failed_ips"]]))
+
+    p.append("<h2>En çok denenen kullanıcı adları</h2>")
+    p.append(table(["Kullanıcı", "Deneme"], [
+        f"<tr><td><code>{e(str(u))}</code></td><td>{n}</td></tr>" for u, n in r["top_failed_users"]]))
+
+    p.append("<h2>Başarılı girişler</h2>")
+    p.append(table(["Zaman", "Kullanıcı", "IP", *geo_h, "Yöntem"], [
+        f"<tr><td>{e(x['ts'])}</td><td class='{'red' if x['user'] == 'root' else ''}'>{e(str(x['user']))}</td>"
+        f"<td><code>{e(str(x['ip']))}</code></td>{cc(x['ip'])}<td>{e(str(x['method']))}</td></tr>"
+        for x in r["successful_logins"]]))
+
+    if r["sudo_suspicious"] or r["sudo_denied"]:
+        p.append("<h2>Şüpheli / reddedilen sudo</h2>")
+        rows = [f"<tr><td>{e(x['ts'])}</td><td>{e(str(x['user']))}</td><td class='amb'>şüpheli</td><td><code>{e(str(x['cmd']))}</code></td></tr>"
+                for x in r["sudo_suspicious"]]
+        rows += [f"<tr><td>{e(x['ts'])}</td><td>{e(str(x['user']))}</td><td class='red'>reddedildi</td><td><code>{e(str(x['cmd']))}</code></td></tr>"
+                 for x in r["sudo_denied"]]
+        p.append(table(["Zaman", "Kullanıcı", "Durum", "Komut"], rows))
+
+    if r["account_changes"]:
+        p.append("<h2>Hesap değişiklikleri</h2>")
+        p.append(table(["Zaman", "Tür", "Kullanıcı", "Grup"], [
+            f"<tr><td>{e(x['ts'])}</td><td>{e(x['kind'])}</td><td>{e(str(x['user']))}</td>"
+            f"<td class='{'red' if x['sensitive'] else ''}'>{e(x.get('group', ''))}</td></tr>"
+            for x in r["account_changes"]]))
+
+    p.append("<h2>Saate göre başarısız denemeler</h2>")
+    mx = max(r["failed_by_hour"].values()) or 1
+    p.append(table(["Saat", "", "Deneme"], [
+        f"<tr><td>{h:02d}:00</td><td style='width:60%'><div class='bar' style='width:{max(2, n / mx * 100):.0f}%'></div></td><td>{n}</td></tr>"
+        for h, n in r["failed_by_hour"].items() if n]))
+
+    p.append("</main></body></html>")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write("\n".join(p))
+
+
 def main():
     ap = argparse.ArgumentParser(description="Linux auth.log analizörü")
     ap.add_argument("files", nargs="+", help="auth.log dosyaları (.gz desteklenir, '-' = stdin)")
@@ -296,6 +409,11 @@ def main():
     ap.add_argument("--json", metavar="DOSYA", help="raporu JSON olarak yaz ('-' = stdout)")
     ap.add_argument("--blocklist", metavar="DOSYA",
                     help="brute-force IP'lerini satır satır yaz (iptables/ipset/fail2ban için)")
+    ap.add_argument("--outdir", metavar="KLASÖR",
+                    help="HTML, JSON ve blocklist'i tarihli adlarla bu klasöre yaz (yoksa oluşturulur)")
+    ap.add_argument("--html", metavar="DOSYA", help="tek dosyalık HTML rapor yaz")
+    ap.add_argument("--geoip-db", metavar="MMDB",
+                    help="yerel GeoLite2-Country.mmdb yolu (pip install geoip2); IP'ler dışarı gönderilmez")
     ap.add_argument("--no-color", action="store_true")
     args = ap.parse_args()
 
@@ -316,6 +434,22 @@ def main():
 
     report = analyze(events, args.threshold, args.window)
 
+    if args.outdir:
+        os.makedirs(args.outdir, exist_ok=True)
+        stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        # Açıkça verilen dosya yolları outdir'e göre önceliklidir
+        args.html = args.html or os.path.join(args.outdir, f"rapor-{stamp}.html")
+        if args.json != "-":
+            args.json = args.json or os.path.join(args.outdir, f"rapor-{stamp}.json")
+        args.blocklist = args.blocklist or os.path.join(args.outdir, f"blocklist-{stamp}.txt")
+
+    if args.geoip_db:
+        ips = {ip for ip, _ in report["top_failed_ips"]} | {x["ip"] for x in report["successful_logins"] if x["ip"]}
+        ips |= {a["ip"] for a in report["bruteforce"]}
+        report["geo"] = geo_lookup(args.geoip_db, ips)
+    if args.html:
+        write_html(report, args.html)
+
     if args.blocklist:
         with open(args.blocklist, "w", encoding="utf-8") as fh:
             fh.writelines(a["ip"] + "\n" for a in report["bruteforce"])
@@ -327,6 +461,9 @@ def main():
         with open(args.json, "w", encoding="utf-8") as fh:
             json.dump(report, fh, indent=2, ensure_ascii=False)
     print_report(report, args.top)
+    for label, path in (("HTML", args.html), ("JSON", args.json), ("Blocklist", args.blocklist)):
+        if path:
+            print(f"  {label:<9}: {os.path.abspath(path)}")
     # Çıkış kodu: 2 = olası ele geçirme, 1 = brute-force, 0 = temiz
     sys.exit(2 if report["possible_compromise"] else 1 if report["bruteforce"] else 0)
 
