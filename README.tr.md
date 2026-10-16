@@ -59,6 +59,7 @@ python analyzer.py /var/log/auth.log --outdir raporlar
 |---|---|
 | `-t`, `--threshold` | Pencere içinde brute force sayılan başarısız deneme sayısı (varsayılan 5) |
 | `-w`, `--window` | Brute force penceresi, dakika (varsayılan 10) |
+| `-m`, `--min-prior-failures` | Başarılı girişin "olası ele geçirme" sayılması için pencere içinde gereken en az başarısız deneme (varsayılan 3) |
 | `-y`, `--year` | Klasik syslog satırlarında yıl yazmaz; logun başladığı yıl (varsayılan: bu yıl) |
 | `-n`, `--top` | Listelerde gösterilecek satır sayısı |
 | `--outdir KLASÖR` | HTML rapor, JSON rapor ve blocklist'i tarih-saat damgalı adlarla `KLASÖR`'e yazar |
@@ -158,8 +159,14 @@ sigma check sigma/
 python -m unittest -v
 ```
 
-15 birim testi; deneme sayımını, brute force eşiğini, ele geçirme tespitini, `sudo` işlemeyi ve ATT&CK eşlemesini kontrol eder.
+17 birim testi; deneme sayımını, brute force eşiğini, ele geçirme tespitini, `sudo` işlemeyi ve ATT&CK eşlemesini kontrol eder.
 [GitHub Actions](.github/workflows/tests.yml) her push'ta testleri Python 3.10, 3.12 ve 3.13'te çalıştırır, analizörü iki örnek log üzerinde çalıştırır ve Sigma kurallarını doğrular.
+
+## Lab ortamında test
+
+Sentetik örneklerin yanı sıra araç, izole bir lab ortamındaki gerçek bir `/var/log/auth.log` üzerinde de çalıştırıldı (host-only ağda bir Ubuntu 24.04 sunucu ve bir saldırgan makine). Ayrı bir test hesabına karşı kısa süreli başarısız SSH denemeleri, ardından başarılı bir giriş üretildi; araç bu gerçek logda hem brute force'u hem de olası ele geçirmeyi yakaladı.
+
+Lab bir yanlış pozitif de ortaya çıkardı: parolanın bir kez yanlış yazıldığı meşru bir giriş, "olası ele geçirme" olarak raporlandı. Bunun üzerine ele geçirme tespiti artık yalnızca giriş öncesi pencere içindeki hataları sayıyor ve en az `--min-prior-failures` kadarını (varsayılan 3) arıyor; böylece tek bir parmak kayması alarm üretmiyor.
 
 ## Proje yapısı
 

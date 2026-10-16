@@ -59,6 +59,7 @@ python analyzer.py /var/log/auth.log --outdir reports
 |---|---|
 | `-t`, `--threshold` | Failed attempts within the window that count as brute force (default 5) |
 | `-w`, `--window` | Brute force window in minutes (default 10) |
+| `-m`, `--min-prior-failures` | Minimum failed attempts in the window before a successful login counts as a possible compromise (default 3) |
 | `-y`, `--year` | Classic syslog lines have no year; the year the log starts in (default: current year) |
 | `-n`, `--top` | Number of rows shown in each list |
 | `--outdir DIR` | Write the HTML report, JSON report and blocklist with timestamped names into `DIR` |
@@ -160,8 +161,14 @@ sigma check sigma/
 python -m unittest -v
 ```
 
-15 unit tests cover attempt counting, the brute force threshold, compromise detection, `sudo` handling and the ATT&CK mapping.
+17 unit tests cover attempt counting, the brute force threshold, compromise detection, `sudo` handling and the ATT&CK mapping.
 [GitHub Actions](.github/workflows/tests.yml) runs them on Python 3.10, 3.12 and 3.13, runs the analyzer on both sample logs and validates the Sigma rules on every push.
+
+## Tested in a lab
+
+Beyond the synthetic samples, the tool was run against a real `/var/log/auth.log` from an isolated lab (an Ubuntu 24.04 server and an attacker host on a host-only network). A short burst of failed SSH logins followed by a successful one was generated against a dedicated test account, and the tool flagged the brute force and the possible compromise on that real log.
+
+The lab also surfaced a false positive: a legitimate login where the password was simply mistyped once was reported as a possible compromise. In response, compromise detection now only counts failures inside the window before the login and requires at least `--min-prior-failures` of them (default 3), so a single fingerslip no longer raises an alert.
 
 ## Project structure
 
