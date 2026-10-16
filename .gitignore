@@ -10,3 +10,5 @@ venv/
 reports/
 raporlar/
 *.mmdb
+rapor.html
+lab-auth.log
