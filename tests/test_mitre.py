@@ -19,6 +19,8 @@ class MitreMappingTests(unittest.TestCase):
     def test_compromise_maps_to_valid_accounts_and_ssh(self):
         r = run("""
 Oct 15 13:44:02 web01 sshd[1501]: Failed password for deploy from 203.0.113.77 port 60210 ssh2
+Oct 15 13:44:05 web01 sshd[1503]: Failed password for deploy from 203.0.113.77 port 60212 ssh2
+Oct 15 13:44:08 web01 sshd[1505]: Failed password for deploy from 203.0.113.77 port 60214 ssh2
 Oct 15 13:44:14 web01 sshd[1509]: Accepted password for deploy from 203.0.113.77 port 60218 ssh2
 """)
         self.assertEqual(ids(r), ["T1078.003", "T1021.004"])

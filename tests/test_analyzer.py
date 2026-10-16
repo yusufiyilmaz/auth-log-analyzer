@@ -7,9 +7,9 @@ import unittest
 from analyzer import analyze, parse_lines
 
 
-def run(log, threshold=5, window=10):
+def run(log, threshold=5, window=10, min_prior=3):
     events = sorted(parse_lines(log.strip().splitlines(), 2026), key=lambda e: e.ts)
-    return analyze(events, threshold, window)
+    return analyze(events, threshold, window, min_prior)
 
 
 class FailureCountTests(unittest.TestCase):
@@ -44,11 +44,30 @@ class DetectionTests(unittest.TestCase):
         r = run("""
 Oct 15 13:44:02 web01 sshd[1501]: Failed password for deploy from 203.0.113.77 port 60210 ssh2
 Oct 15 13:44:05 web01 sshd[1503]: Failed password for deploy from 203.0.113.77 port 60212 ssh2
+Oct 15 13:44:08 web01 sshd[1505]: Failed password for deploy from 203.0.113.77 port 60214 ssh2
 Oct 15 13:44:14 web01 sshd[1509]: Accepted password for deploy from 203.0.113.77 port 60218 ssh2
 """)
         self.assertEqual(len(r["possible_compromise"]), 1)
         hit = r["possible_compromise"][0]
-        self.assertEqual((hit["user"], hit["ip"], hit["prior_failures"]), ("deploy", "203.0.113.77", 2))
+        self.assertEqual((hit["user"], hit["ip"], hit["prior_failures"]), ("deploy", "203.0.113.77", 3))
+
+    def test_single_failure_before_success_is_not_flagged(self):
+        # Parmak kayması: tek yanlış parola sonrası başarılı giriş alarm üretmemeli
+        r = run("""
+Oct 15 15:15:41 web01 sshd[1068]: Failed password for yusuf from 10.0.2.1 port 58123 ssh2
+Oct 15 15:15:45 web01 sshd[1068]: Accepted password for yusuf from 10.0.2.1 port 58123 ssh2
+""")
+        self.assertEqual(r["possible_compromise"], [])
+
+    def test_old_failures_outside_window_are_not_counted(self):
+        # Girişten saatler önceki hatalar ele geçirme sayılmaz
+        r = run("""
+Oct 15 09:00:00 web01 sshd[100]: Failed password for deploy from 203.0.113.77 port 60210 ssh2
+Oct 15 09:00:03 web01 sshd[102]: Failed password for deploy from 203.0.113.77 port 60212 ssh2
+Oct 15 09:00:06 web01 sshd[104]: Failed password for deploy from 203.0.113.77 port 60214 ssh2
+Oct 15 13:44:14 web01 sshd[1509]: Accepted password for deploy from 203.0.113.77 port 60218 ssh2
+""")
+        self.assertEqual(r["possible_compromise"], [])
 
     def test_clean_login_is_not_flagged(self):
         r = run("""

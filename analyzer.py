@@ -159,7 +159,7 @@ def detect_bruteforce(fails, threshold, window_min):
     return sorted(alerts, key=lambda a: -a["total_failures"])
 
 
-def analyze(events, threshold, window):
+def analyze(events, threshold, window, min_prior=3):
     c = Counter(e.kind for e in events)
     fails = dedupe_failures(events)
     failed_ip = Counter(e.ip for e in fails)
@@ -168,14 +168,18 @@ def analyze(events, threshold, window):
     bf = detect_bruteforce(fails, threshold, window)
     bf_ips = {a["ip"] for a in bf}
 
-    # En kritik bulgu: başarısız denemelerden sonra aynı IP'den başarılı giriş
+    # En kritik bulgu: başarısız denemelerden sonra aynı IP'den başarılı giriş.
+    # Yalnızca giriş öncesi pencere içindeki hatalar sayılır; tek bir yanlış
+    # parola (parmak kayması) alarm üretmesin diye en az min_prior hata aranır.
+    prior_window = timedelta(minutes=window)
     fails_by_ip = defaultdict(list)
     for e in fails:
         fails_by_ip[e.ip].append(e.ts)
     compromised = []
     for e in accepted:
-        prior = sum(1 for t in fails_by_ip.get(e.ip, ()) if t <= e.ts)
-        if prior:
+        prior = sum(1 for t in fails_by_ip.get(e.ip, ())
+                    if e.ts - prior_window <= t <= e.ts)
+        if prior >= min_prior:
             compromised.append({
                 "ts": e.ts.isoformat(), "ip": e.ip, "user": e.user,
                 "method": (e.extra or {}).get("method"),
@@ -425,6 +429,8 @@ def main():
     ap.add_argument("files", nargs="+", help="auth.log dosyaları (.gz desteklenir, '-' = stdin)")
     ap.add_argument("-t", "--threshold", type=int, default=5, help="brute-force eşiği (varsayılan 5)")
     ap.add_argument("-w", "--window", type=int, default=10, help="brute-force penceresi, dakika (varsayılan 10)")
+    ap.add_argument("-m", "--min-prior-failures", type=int, default=3,
+                    help="olası ele geçirme için gereken en az başarısız deneme (varsayılan 3)")
     ap.add_argument("-y", "--year", type=int, default=datetime.now().year,
                     help="klasik syslog formatında başlangıç yılı")
     ap.add_argument("-n", "--top", type=int, default=10, help="listelerde gösterilecek satır sayısı")
@@ -454,7 +460,7 @@ def main():
             print(f"hata: {f}: {e}", file=sys.stderr)
     events.sort(key=lambda e: e.ts)
 
-    report = analyze(events, args.threshold, args.window)
+    report = analyze(events, args.threshold, args.window, args.min_prior_failures)
 
     if args.outdir:
         os.makedirs(args.outdir, exist_ok=True)
